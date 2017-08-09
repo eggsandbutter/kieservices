@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -38,13 +40,76 @@ public class CallKie {
 	private static final String urlKieServer = "http://localhost:8080/kie-server-6.5.0.Final-ee7/services/rest/server";
 	private static final String name = "kieserver";
 	private static final String password = "holanda1!";
+	public static final int REST_JSON = 0;
+	public static final int REST_XSTREAM = 1;
+	public static final int REST_JAXB = 2;
 
 
-	public static void callWSXStream(String containerName, List<String> classNames, List<Object> objetos, String sessionName) {
+	public static void executeStateless(String containerName, String sessionName, List<String> classNames, List<Object> objects, HashMap<String, Object> globals, int restService) {
+		try {
+
+			if (containerName == null || containerName.equals("") || sessionName == null || sessionName.equals("")) {
+				//Provoke error
+				System.out.println("Session name and/or container name not informed.");
+				Integer.parseInt("S");
+			}
+			
+		    KieCommands commandsFactory = KieServices.Factory.get().getCommands();
+			
+			List<Command<?>> cmds = new ArrayList<Command<?>>();
+
+			if (objects != null) {
+				Iterator<Object> it = objects.iterator();
+				while (it.hasNext()) {
+					Object object = it.next();
+					Command<?> insertObjectCommand = commandsFactory.newInsert(object, object.getClass().getName(), false, null); 
+					cmds.add(insertObjectCommand);
+				}
+			}
+
+			if (globals != null) {
+				Iterator<Map.Entry<String, Object>> it2 = globals.entrySet().iterator();
+				while (it2.hasNext()) {
+					Map.Entry<String, Object> global = (Map.Entry<String, Object>)it2.next();
+					Command<?> setGlobalCommand = commandsFactory.newSetGlobal(global.getKey(), global.getValue(), true);
+					cmds.add(setGlobalCommand);
+					Command<?> getObjectsCommand = commandsFactory.newGetObjects(global.getKey());
+					cmds.add(getObjectsCommand);
+				}
+			}
+
+			Command<?> fireAllRulesCommand = commandsFactory.newFireAllRules();
+			cmds.add(fireAllRulesCommand);
+
+			BatchExecutionCommand command = commandsFactory.newBatchExecution(cmds, sessionName);
+			
+			switch (restService) {
+			case REST_JAXB:
+				callWSJaxB(command, containerName, classNames);
+				break;
+			case REST_JSON:
+				callWSJSon(command, containerName);
+				break;
+			case REST_XSTREAM:
+				callWSXStream(command, containerName);
+				break;
+			default:
+				//Provoke error
+				System.out.println("Rest service not valid");
+				Integer.parseInt("S");
+			}
+			
+
+		} catch (Exception exception) {
+			exception.printStackTrace();
+		}
+		
+	}
+	
+	public static void callWSXStream(BatchExecutionCommand command, String containerName) {
 
 		try {			
 		    
-			BatchExecutionCommand command = createBatchExecutionCommandStateless(objetos, sessionName);
 
 			String xStream = BatchExecutionHelper.newXStreamMarshaller().toXML(command);
 
@@ -77,10 +142,10 @@ public class CallKie {
 		}
 	}
 	
-	public static void callWSJaxB(String containerName, List<String> classNames, List<Object> objetos, String sessionName) {
+	public static void callWSJaxB(BatchExecutionCommand command, String containerName, List<String> classNames) {
 
 		try {			
-		    
+			
 			KieServicesConfiguration config =  KieServicesFactory.
 			        newRestConfiguration(urlKieServer,
 		        		name,
@@ -88,8 +153,6 @@ public class CallKie {
 		    config.setMarshallingFormat(MarshallingFormat.JAXB); 
 			KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
 		    //RuleServicesClient rulesClient = client.getServicesClient(RuleServicesClient.class);  
-
-			BatchExecutionCommand command = createBatchExecutionCommandStateless(objetos, sessionName);
 
 			JAXBContext jaxbContext = DroolsJaxbHelperProviderImpl.createDroolsJaxbContext(classNames, null);
 			Marshaller marshaller = jaxbContext.createMarshaller(); 
@@ -113,80 +176,10 @@ public class CallKie {
 		}
 	}
 		
-	@SuppressWarnings("rawtypes")
-	private static BatchExecutionCommand createBatchExecutionCommandStateless(List<Object> objetos, String sessionName) {
-		BatchExecutionCommand command = null;
-		try {
-		    KieCommands commandsFactory = KieServices.Factory.get().getCommands();
-
-			Iterator<Object> it = objetos.iterator();
-			
-			List<Command> cmds = new ArrayList<Command>();
-			
-			Command insertObjectCommand = null; 
-			while (it.hasNext()) {
-				Object objeto = it.next();
-				insertObjectCommand = commandsFactory.newInsert(objeto, objeto.getClass().getName(), false, null); 
-				cmds.add(insertObjectCommand);
-			}
-
-//			Command setGlobalCommand = commandsFactory.newSetGlobal("globalListado", new java.util.ArrayList<>(), true);
-//			cmds.add(setGlobalCommand);
-//			Command getObjectsCommand = commandsFactory.newGetObjects("globalListado");
-//			cmds.add(getObjectsCommand);
-
-			Command setGlobalCommand = commandsFactory.newSetGlobal("dato", new java.lang.String(), "datoOut");
-			cmds.add(setGlobalCommand);
-			Command getGlobalCommand = commandsFactory.newGetGlobal("datoOut");
-			cmds.add(getGlobalCommand);
-
-			Command fireAllRulesCommand = commandsFactory.newFireAllRules(1);
-			cmds.add(fireAllRulesCommand);
-
-			command = commandsFactory.newBatchExecution(cmds, sessionName);
-
-		} catch (Exception exception) {
-			exception.printStackTrace();
-		}
-		return command;
-	}
-
-	@SuppressWarnings("rawtypes")
-	private static BatchExecutionCommand createBatchExecutionCommandStateful(List<Object> objetos, String sessionName) {
-		BatchExecutionCommand command = null;
-		try {
-		    KieCommands commandsFactory = KieServices.Factory.get().getCommands();
-
-			Iterator<Object> it = objetos.iterator();
-			
-			List<Command> cmds = new ArrayList<Command>();
-			
-			Command insertObjectCommand = null; 
-			while (it.hasNext()) {
-				Object objeto = it.next();
-				insertObjectCommand = commandsFactory.newInsert(objeto, objeto.getClass().getName(), false, null); 
-				cmds.add(insertObjectCommand);
-				Command getObjectsCommand = commandsFactory.newGetObjects(objeto.getClass().getName());
-				cmds.add(getObjectsCommand);
-			}
-
-			Command fireAllRulesCommand = commandsFactory.newFireAllRules(1);
-			cmds.add(fireAllRulesCommand);
-
-			command = commandsFactory.newBatchExecution(cmds, sessionName);
-
-		} catch (Exception exception) {
-			exception.printStackTrace();
-		}
-		return command;
-	}
-	
-	public static void callWSJSon(String containerName, List<String> classNames, List<Object> objetos, String sessionName) {
+	public static void callWSJSon(BatchExecutionCommand command, String containerName) {
 
 		try {			
 		    
-			BatchExecutionCommand command = createBatchExecutionCommandStateless(objetos, sessionName);
-
 			String sJson = BatchExecutionHelper.newJSonMarshaller().toXML(command);
 
 			System.out.println("sJson: "+sJson);
@@ -219,40 +212,59 @@ public class CallKie {
 	
 	}
 	
-	@SuppressWarnings("rawtypes")
-	public static void executeProcess(String containerName, List<String> classNames, List<Object> objects, String sessionName, String proceso) {
+	public static void executeProcess(String containerName, String sessionName, List<String> classNames, List<Object> objects, HashMap<String, Object> globals, String processID, int restService) {
 		try {
 
-			KieServicesConfiguration config =  KieServicesFactory.
-			        newRestConfiguration(urlKieServer,
-		        		name,
-		        		password);
-		    config.setMarshallingFormat(MarshallingFormat.JAXB); 
-			KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
-
-		    List<Command> cmds = new ArrayList<Command>();
+			if (containerName == null || containerName.equals("") || sessionName == null || sessionName.equals("") || processID == null || processID.equals("") ) {
+				//Provoke error
+				System.out.println("Session name, container name and/or processID not informed.");
+				Integer.parseInt("S");
+			}
+			
+		    List<Command<?>> cmds = new ArrayList<Command<?>>();
 			
 		    KieCommands commandsFactory = KieServices.Factory.get().getCommands();
 
-		    Command startProcessCommand = commandsFactory.newStartProcess(proceso);
+			if (objects != null) {
+				Iterator<Object> it = objects.iterator();
+				while (it.hasNext()) {
+					Object object = it.next();
+					Command<?> insertObjectCommand = commandsFactory.newInsert(object, object.getClass().getName(), false, null); 
+					cmds.add(insertObjectCommand);
+				}
+			}
+
+			if (globals != null) {
+				Iterator<Map.Entry<String, Object>> it2 = globals.entrySet().iterator();
+				while (it2.hasNext()) {
+					Map.Entry<String, Object> global = (Map.Entry<String, Object>)it2.next();
+					Command<?> setGlobalCommand = commandsFactory.newSetGlobal(global.getKey(), global.getValue(), true);
+					cmds.add(setGlobalCommand);
+					Command<?> getObjectsCommand = commandsFactory.newGetObjects(global.getKey());
+					cmds.add(getObjectsCommand);
+				}
+			}
+
+		    Command<?> startProcessCommand = commandsFactory.newStartProcess(processID);
 		    cmds.add(startProcessCommand);
 
 			BatchExecutionCommand command = commandsFactory.newBatchExecution(cmds, sessionName);
 			
-			JAXBContext jaxbContext = DroolsJaxbHelperProviderImpl.createDroolsJaxbContext(classNames, null);
-			Marshaller marshaller = jaxbContext.createMarshaller(); 
-			StringWriter xml = new StringWriter(); 
-			marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-			
-			marshaller.marshal(command, System.out);
-			marshaller.marshal(command, xml);
-
-			ServiceResponse<String> response = client.executeCommands("instances/"+containerName, xml.toString()); 
-			
-			System.out.println("Message: "+response.getMsg());
-			System.out.println("Result: "+response.getResult());
-			System.out.println("Type: "+response.getType());
-			System.out.println("Response: "+response);
+			switch (restService) {
+			case REST_JAXB:
+				callWSJaxB(command, containerName, classNames);
+				break;
+			case REST_JSON:
+				callWSJSon(command, containerName);
+				break;
+			case REST_XSTREAM:
+				callWSXStream(command, containerName);
+				break;
+			default:
+				//Provoke error
+				System.out.println("Rest service not valid");
+				Integer.parseInt("S");
+			}
 						
 		} catch (Exception exception) {
 			exception.printStackTrace();
