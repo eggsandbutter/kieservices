@@ -28,6 +28,7 @@ import org.kie.api.KieServices;
 import org.kie.api.command.BatchExecutionCommand;
 import org.kie.api.command.Command;
 import org.kie.api.command.KieCommands;
+import org.kie.internal.runtime.KnowledgeContext;
 import org.kie.internal.runtime.helper.BatchExecutionHelper;
 import org.kie.server.api.marshalling.MarshallingFormat;
 import org.kie.server.api.model.ServiceResponse;
@@ -43,8 +44,7 @@ public class CallKie {
 	public static final int REST_JSON = 0;
 	public static final int REST_XSTREAM = 1;
 	public static final int REST_JAXB = 2;
-
-
+	
 	public static void executeStateless(String containerName, String sessionName, List<String> classNames, List<Object> objects, HashMap<String, Object> globals, int restService) {
 		try {
 
