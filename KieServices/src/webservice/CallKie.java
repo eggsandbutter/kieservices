@@ -225,12 +225,14 @@ public class CallKie {
 			
 		    KieCommands commandsFactory = KieServices.Factory.get().getCommands();
 
+		    Map<String, Object> params = new HashMap<String, Object>();
 			if (objects != null) {
 				Iterator<Object> it = objects.iterator();
 				while (it.hasNext()) {
 					Object object = it.next();
 					Command<?> insertObjectCommand = commandsFactory.newInsert(object, object.getClass().getName(), false, null); 
 					cmds.add(insertObjectCommand);
+					params.put(object.getClass().getName(), object);
 				}
 			}
 
@@ -245,7 +247,7 @@ public class CallKie {
 				}
 			}
 
-		    Command<?> startProcessCommand = commandsFactory.newStartProcess(processID);
+		    Command<?> startProcessCommand = commandsFactory.newStartProcess(processID, params);
 		    cmds.add(startProcessCommand);
 
 			BatchExecutionCommand command = commandsFactory.newBatchExecution(cmds, sessionName);
