@@ -27,11 +27,8 @@ import org.kie.server.client.RuleServicesClient;
 public class CallKie_650 {
 
 	private static final String urlKieServer = "http://localhost:8080/kie-server-6.5.0.Final-ee7/services/rest/server";
-//	private static final String urlAquila = "https://aquiladev.asisa.es/kie-server/services/rest/server";
 	private static final String name = "kieserver";
-//	private static final String nameAquila = "rdekker";
 	private static final String password = "holanda1!";
-//	private static final String passAquila = "djwjjk12992wkk";
 	private static final long timeout = 3000L;
 	public static final int REST_JSON = 0;
 	public static final int REST_XSTREAM = 1;
