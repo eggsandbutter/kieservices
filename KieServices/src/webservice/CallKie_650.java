@@ -13,6 +13,7 @@ import org.kie.api.command.BatchExecutionCommand;
 import org.kie.api.command.Command;
 import org.kie.api.command.KieCommands;
 import org.kie.api.runtime.ExecutionResults;
+import org.kie.server.api.commands.CreateContainerCommand;
 import org.kie.server.api.marshalling.MarshallingFormat;
 import org.kie.server.api.model.KieContainerResource;
 import org.kie.server.api.model.KieContainerResourceList;
@@ -158,7 +159,10 @@ public class CallKie_650 {
 					Object object = (Object)executionResults.getValue(clas.getName());
 					objects.add(object);
 				}
+			} else {
+				
 			}
+			objects.add(response);
 			
 		} catch (Exception exception) {
 			exception.printStackTrace();
@@ -341,8 +345,9 @@ public class CallKie_650 {
 		try {
 			KieServicesConfiguration configuration = KieServicesFactory.newRestConfiguration(CallKie_650.urlKieServer, CallKie_650.name, CallKie_650.password);
 			configuration.setMarshallingFormat(MarshallingFormat.JAXB);
-			KieServicesClient kieServicesClient =  KieServicesFactory.newKieServicesClient(configuration);	
+			KieServicesClient kieServicesClient = KieServicesFactory.newKieServicesClient(configuration);	
 			
+
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
