@@ -10,11 +10,6 @@
   
 	<dependencies>
 		<dependency>
-			<groupId>ASISA</groupId>
-			<artifactId>AsisaMotorBom</artifactId>
-			<version>1.1</version>
-		</dependency>
-		<dependency>
 			<groupId>org.drools</groupId>
 			<artifactId>drools-core</artifactId>
 			<version>${drools.version}</version>
